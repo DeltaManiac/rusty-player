@@ -1,4 +1,3 @@
-
 extern crate button_controller;
 extern crate music;
 extern crate piston_window;
@@ -53,20 +52,19 @@ fn main() {
                 match e {
                     ButtonEvent::Click => {
                         println!("Current Playing status : {}", is_playing);
-                        
+
                         if is_playing {
-                                music::play_music(&Music::s1, music::Repeat::Forever);
-                            
-                                music::set_volume(music::MAX_VOLUME);
+                            music::play_music(&Music::s1, music::Repeat::Forever);
+
+                            music::set_volume(music::MAX_VOLUME);
                         } else {
                             music::set_volume(music::MIN_VOLUME);
                         }
                         is_playing = !is_playing;
                     }
-                    
+
                     _ => (),
                 };
-                
             }
 
             window.draw_2d(&e, |_c, g| {

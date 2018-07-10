@@ -1,5 +1,5 @@
 [package]
-name = "rM-Play3r"
+name = "rusty-player"
 version = "0.1.0"
 authors = ["DeltaManiac <maxpaynered@gmail.com>"]
 build = "build.rs"
