@@ -5,11 +5,8 @@ authors = ["DeltaManiac <maxpaynered@gmail.com>"]
 build = "build.rs"
 
 [dependencies]
-piston = "0.36.0"
-piston2d-graphics = "0.26.0"
-pistoncore-glutin_window = "0.46.0"
-piston2d-opengl_graphics = "0.53.0"
-piston_window = "0.80.0"
-pistoncore-sdl2_window = "0.50.0"
-piston-music = "0.24.0"
-piston-button_controller = "0.5.0"
+rodio = "0.8.0"
+winit = "0.12"
+glium = "0.21"
+glutin = "0.14"
+conrod = {version = "0.60.0", features=["winit","glium"]}
