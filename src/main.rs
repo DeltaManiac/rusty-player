@@ -1,19 +1,23 @@
 extern crate rodio;
 
 use std::io::BufReader;
-
+#[macro_use]
 extern crate conrod;
 
 fn main() {
     init();
 }
 
-use conrod::backend::glium::glium::{self, Surface};
+use conrod::{backend::glium::glium::{self, Surface},widget,Positionable,Colorable,Widget};
 
 fn init() {
+        let (width,height) = (640,320);
     let window = glium::glutin::WindowBuilder::new()
         .with_title("rs-player")
-        .with_dimensions(320, 640);
+        .with_min_dimensions(width,height)
+        // TODO(DeltaManiac): Find out why this doesnt work
+        //.with_resizable(false)
+        .with_decorations(false);
     let mut context = glium::glutin::ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4);
@@ -21,8 +25,13 @@ fn init() {
     let display = glium::Display::new(window, context, &event_loop).unwrap();
     let mut event_queue = Vec::new();
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
-    let mut ui = conrod::UiBuilder::new([320 as f64, 640 as f64]).build();
-    // NOTE(DeltaManiac): Move this to a structperhaps ?
+    let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
+        // NOTE(DeltaManiac): Recheck this
+        widget_ids!(struct Ids { text });
+        let ids = Ids::new(ui.widget_id_generator());
+        ui.fonts.insert_from_file("./assets/Potra.ttf").unwrap();
+        let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
+        // NOTE(DeltaManiac): Move this to a struct perhaps ?
     let device = rodio::default_output_device().unwrap();
     let mut sink = rodio::Sink::new(&device);
     let mut is_playing = false;
@@ -74,10 +83,18 @@ fn init() {
                 None => continue,
                 Some(input) => input,
             };
-
+                             ui.handle_event(input);
+                             let ui = &mut ui.set_widgets();
+                             widget::Text::new("Press P to Play/Pause!")
+                             .middle_of(ui.window)
+                             .color(conrod::color::LIGHT_YELLOW)
+                             .font_size(28)
+                             .set(ids.text, ui);
             if let Some(primitives) = ui.draw_if_changed() {
+                             renderer.fill(&display, primitives, &image_map);
                 let mut target = display.draw();
                 target.clear_color(0.0, 0.0, 0.0, 1.0);
+                             renderer.draw(&display, &mut target, &image_map).unwrap();
                 target.finish().unwrap();
             }
         }
