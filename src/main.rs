@@ -2,7 +2,6 @@ extern crate rodio;
 
 use std::io::BufReader;
 
-//#[macro_use]
 extern crate conrod;
 
 fn main() {
@@ -23,6 +22,10 @@ fn init() {
     let mut event_queue = Vec::new();
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
     let mut ui = conrod::UiBuilder::new([320 as f64, 640 as f64]).build();
+    // NOTE(DeltaManiac): Move this to a structperhaps ?
+    let device = rodio::default_output_device().unwrap();
+    let mut sink = rodio::Sink::new(&device);
+    let mut is_playing = false;
     // NOTE(DeltaManiac): Here starts the main loop
     'main: loop {
         event_queue.clear();
@@ -48,6 +51,20 @@ fn init() {
                             },
                         ..
                     } => break 'main,
+                    glium::glutin::WindowEvent::KeyboardInput {
+                        input:
+                            glium::glutin::KeyboardInput {
+                                virtual_keycode: Some(glium::glutin::VirtualKeyCode::P),
+                                state: glium::glutin::ElementState::Pressed,
+                                ..
+                            },
+                        ..
+                    } => {
+                        play_music(&mut sink, &mut is_playing);
+                        //sink.detach();
+                        println!("PRESSEED P");
+                        ()
+                    }
                     _ => (),
                 },
                 _ => (),
@@ -67,11 +84,24 @@ fn init() {
     }
 }
 
-fn play_music() {
+fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
     // TODO(DeltaManiac): Move Audio Code to a better location.
-    let device = rodio::default_output_device().unwrap();
-    let sink = rodio::Sink::new(&device);
-    let file = std::fs::File::open("./assets/test.mp3").unwrap();
-    sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
-    sink.sleep_until_end();
+    println!("Called Music");
+
+    if !*is_playing {
+        let file = std::fs::File::open("./assets/test.mp3").unwrap();
+        if sink.empty() {
+            println!("Sink is empty and not playing");
+            sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+        } else {
+            sink.play();
+        }
+        *is_playing = true;
+    } else {
+        sink.pause();
+        if sink.empty() {
+            println!("Sink is empty");
+        }
+        *is_playing = false;
+    }
 }
