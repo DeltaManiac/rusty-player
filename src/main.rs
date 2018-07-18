@@ -157,10 +157,9 @@ impl<'a> Id3V1<'a> {
                 println!("Title: {:?}",std::str::from_utf8(&data[3..33]).unwrap().trim_matches(|char| char == '\0'));
                 println!("Artist:{:?}",std::str::from_utf8(&data[33..63]).unwrap().trim_matches(|char| char == '\0'));
                 println!("Album:{:?}",std::str::from_utf8(&data[63..93]).unwrap().trim_matches(|char| char == '\0'));
-                println!("Year:{:?}",std::str::from_utf8(&data[93..97]).unwrap().trim_matches(|char| char == '\0
-                '));
+                println!("Year:{:?}",std::str::from_utf8(&data[93..97]).unwrap().trim_matches(|char| char == '\0'));
                 // TODO: FIX THIS :(
-                tag_data.title = std::str::from_utf8(&data[3..33]).unwrap().trim_matches(|char| char == '\0');
+                //tag_data.title = std::str::from_utf8(&data[3..33]).unwrap().trim_matches(|char| char == '\0');
         } 
     tag_data
     }
