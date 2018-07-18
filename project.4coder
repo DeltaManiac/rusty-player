@@ -1,13 +1,13 @@
 version(1);
 project_name = "Rascii";
 patterns = {
-"*.rs",
+"src/*.rs",
 "Cargo.toml",
 "*.4coder",
 };
 blacklist_patterns = {
 ".*",
-"target/*",
+"target/*.rs",
 };
 load_paths_base = {
  { ".", .relative = true, .recursive = true, },
