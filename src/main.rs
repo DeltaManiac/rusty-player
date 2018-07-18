@@ -1,6 +1,6 @@
 extern crate rodio;
 use std::fs::File;
-use std::io::{BufReader,SeekFrom,Seek,Read};
+use std::io::{BufReader, Read, Seek, SeekFrom};
 #[macro_use]
 extern crate conrod;
 
@@ -110,9 +110,9 @@ fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
 
     if !*is_playing {
         //let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
-            let mut file = std::fs::File::open ("./assets/def.mp3").unwrap();
-            print_mp3_tag(&mut file);
-            if sink.empty() {
+        let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
+        print_mp3_tag(&mut file);
+        if sink.empty() {
             println!("Sink is empty and not playing");
             sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
         } else {
@@ -129,47 +129,63 @@ fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
 }
 
 #[derive(Debug)]
-struct  Id3V1<'a> {
-title:&'a str,
-        artist:&'a str,
-        year:&'a str,
-        album:&'a str,
+struct Id3V1<'a> {
+    title: &'a str,
+    artist: &'a str,
+    year: &'a str,
+    album: &'a str,
 }
 
 impl<'a> Id3V1<'a> {
-        pub fn new()-> Id3V1<'a> {
-    Id3V1{
-        title : "Untitled",
-            artist : "Unknown",
-                 year: "Unknown",
-                 album: "Unknown",
+    pub fn new() -> Id3V1<'a> {
+        Id3V1 {
+            title: "Untitled",
+            artist: "Unknown",
+            year: "Unknown",
+            album: "Unknown",
         }
-    
     }
 
-    pub fn from_file(file:&mut File)->Id3V1<'a>{
-            println!("Seek end -128{:?}",file.seek(SeekFrom::End(-128)));
-            let mut tag_data = Id3V1::new(); 
-            let mut data:Vec<u8> = Vec::new();
-            file.read_to_end(&mut data);
-            // NOTE(DeltaManiac): TAG == TAG
-            if (data[0],data[1],data[2]) == (84,65,71){
-                println!("Title: {:?}",std::str::from_utf8(&data[3..33]).unwrap().trim_matches(|char| char == '\0'));
-                println!("Artist:{:?}",std::str::from_utf8(&data[33..63]).unwrap().trim_matches(|char| char == '\0'));
-                println!("Album:{:?}",std::str::from_utf8(&data[63..93]).unwrap().trim_matches(|char| char == '\0'));
-                println!("Year:{:?}",std::str::from_utf8(&data[93..97]).unwrap().trim_matches(|char| char == '\0'));
-                // TODO: FIX THIS :(
-                //tag_data.title = std::str::from_utf8(&data[3..33]).unwrap().trim_matches(|char| char == '\0');
-        } 
-    tag_data
+    pub fn from_file(file: &mut File) -> Id3V1<'a> {
+        println!("Seek end -128{:?}", file.seek(SeekFrom::End(-128)));
+        let mut tag_data = Id3V1::new();
+        let mut data: Vec<u8> = Vec::new();
+        file.read_to_end(&mut data);
+        // NOTE(DeltaManiac): TAG == TAG
+        if (data[0], data[1], data[2]) == (84, 65, 71) {
+            println!(
+                "Title: {:?}",
+                std::str::from_utf8(&data[3..33])
+                    .unwrap()
+                    .trim_matches(|char| char == '\0')
+            );
+            println!(
+                "Artist:{:?}",
+                std::str::from_utf8(&data[33..63])
+                    .unwrap()
+                    .trim_matches(|char| char == '\0')
+            );
+            println!(
+                "Album:{:?}",
+                std::str::from_utf8(&data[63..93])
+                    .unwrap()
+                    .trim_matches(|char| char == '\0')
+            );
+            println!(
+                "Year:{:?}",
+                std::str::from_utf8(&data[93..97])
+                    .unwrap()
+                    .trim_matches(|char| char == '\0')
+            );
+            // TODO: FIX THIS :(
+            //tag_data.title = std::str::from_utf8(&data[3..33]).unwrap().trim_matches(|char| char == '\0');
+        }
+        tag_data
     }
-    
 }
-                             
-fn print_mp3_tag(file:&mut File) {
-        
-        println!("{:?}",Id3V1::from_file(file));
-        // NOTE(DeltaManiac): Reset if cursor has moved
-        file.seek(SeekFrom::Start(0));
-    
+
+fn print_mp3_tag(file: &mut File) {
+    println!("{:?}", Id3V1::from_file(file));
+    // NOTE(DeltaManiac): Reset if cursor has moved
+    file.seek(SeekFrom::Start(0));
 }
