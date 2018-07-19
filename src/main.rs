@@ -14,6 +14,25 @@ use conrod::{
     widget, Colorable, Positionable, Widget,
 };
 
+
+struct current_mp3<'a> {
+idx:u32,
+    id3v1_tag : Id3V1<'a>
+}
+impl<'a> current_mp3<'a> {
+        pub fn new(file:Option<&mut File>) -> current_mp3<'a> {
+            let tag = match file {
+                Some(file)=> Id3V1::from_file(file),
+                None => Id3V1::new()
+        };
+            current_mp3 {
+                idx:0,
+            id3v1_tag:tag,
+        }
+    }
+ }
+
+
 fn init() {
     let (width, height) = (640, 320);
     let window = glium::glutin::WindowBuilder::new()
@@ -31,7 +50,16 @@ fn init() {
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
     let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
     // NOTE(DeltaManiac): Recheck this
-    widget_ids!(struct Ids { text });
+    widget_ids!(struct Ids { 
+            text,
+        text_info,
+            text_title,
+    text_artist,
+    text_album,
+        text_year,
+    }
+    );
+        let mut curr_file = current_mp3::new(None);
     let ids = Ids::new(ui.widget_id_generator());
     ui.fonts.insert_from_file("./assets/Potra.ttf").unwrap();
     let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
@@ -76,7 +104,7 @@ fn init() {
                         play_music(&mut sink, &mut is_playing);
                         //sink.detach();
                         println!("PRESSEED P");
-                        ()
+                            ()
                     }
                     _ => (),
                 },
@@ -87,13 +115,54 @@ fn init() {
                 None => continue,
                 Some(input) => input,
             };
-            ui.handle_event(input);
-            let ui = &mut ui.set_widgets();
-            widget::Text::new("Press P to Play/Pause!")
-                .middle_of(ui.window)
-                .color(conrod::color::LIGHT_YELLOW)
-                .font_size(28)
-                .set(ids.text, ui);
+                             ui.handle_event(input);
+                             let ui = &mut ui.set_widgets();
+                             if is_playing {
+                             widget::Text::new("Press P to Pause!")
+                             .middle_of(ui.window)
+                             .color(conrod::color::LIGHT_YELLOW)
+                             .font_size(28)
+                             .set(ids.text, ui);
+                             
+                             widget::Text::new("File Info") 
+                             .top_left_of(ui.window)
+                             .color(conrod::color::LIGHT_RED)
+                             .font_size(24)
+                             .set(ids.text_info, ui);
+                             
+                             widget::Text::new(&format!("Title:{}" , curr_file.id3v1_tag.title.to_owned())[..]) 
+                             .down_from(ids.text_info,1.0)
+                             .color(conrod::color::LIGHT_BLUE)
+                             .font_size(20)
+                             .set(ids.text_title, ui);
+                             
+                             widget::Text::new(&format!("Album:{}" , curr_file.id3v1_tag.album.to_owned())[..]) 
+                             .down_from(ids.text_title,1.0)
+                             .color(conrod::color::LIGHT_BLUE)
+                             .font_size(20)
+                             .set(ids.text_album, ui);
+                             
+                             widget::Text::new(&format!("Artist:{}" , curr_file.id3v1_tag.artist.to_owned())[..]) 
+                             .down_from(ids.text_album,1.0)
+                             .color(conrod::color::LIGHT_BLUE)
+                             .font_size(20)
+                             .set(ids.text_artist, ui);
+                             
+                             widget::Text::new(&format!("Year:{}" , curr_file.id3v1_tag.year.to_owned())[..]) 
+                             .down_from(ids.text_artist,1.0)
+                             .color(conrod::color::LIGHT_BLUE)
+                             .font_size(20)
+                             .set(ids.text_year, ui);
+                             
+                             
+                             } else {
+                             widget::Text::new("Press P to Play!")
+                             .middle_of(ui.window)
+                             .color(conrod::color::LIGHT_YELLOW)
+                             .font_size(28)
+                             .set(ids.text, ui);
+                             }
+                             //println!("{:?}",a);
             if let Some(primitives) = ui.draw_if_changed() {
                 renderer.fill(&display, primitives, &image_map);
                 let mut target = display.draw();
@@ -110,8 +179,8 @@ fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
     println!("Called Music");
 
     if !*is_playing {
-        let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
-        //let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
+        //let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
+            let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
         print_mp3_tag(&mut file);
         if sink.empty() {
             println!("Sink is empty and not playing");
@@ -168,6 +237,7 @@ year: Cow::Borrowed("Unknown"),
                 .unwrap()
                 .trim_matches(|char| char == '\0').to_string());
         }
+        file.seek(SeekFrom::Start(0));
         tag_data
     }
 }
@@ -175,5 +245,5 @@ year: Cow::Borrowed("Unknown"),
 fn print_mp3_tag(file: &mut File) {
     println!("{:?}", Id3V1::from_file(file));
     // NOTE(DeltaManiac): Reset if cursor has moved
-    file.seek(SeekFrom::Start(0));
+    //file.seek(SeekFrom::Start(0));
 }
