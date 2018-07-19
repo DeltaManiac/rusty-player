@@ -101,9 +101,8 @@ fn init() {
                             },
                         ..
                     } => {
-                        play_music(&mut sink, &mut is_playing);
-                        //sink.detach();
-                        println!("PRESSEED P");
+                        curr_file = play_music(&mut sink, &mut is_playing);
+                            //println!("PRESSEED P:{:?}",curr_file);
                             ()
                     }
                     _ => (),
@@ -173,7 +172,7 @@ fn init() {
         }
     }
 }
-
+/*
 fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
     // TODO(DeltaManiac): Move Audio Code to a better location.
     println!("Called Music");
@@ -196,6 +195,35 @@ fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
         }
         *is_playing = false;
     }
+}
+
+*/
+fn play_music<'a>(sink: &mut rodio::Sink, is_playing: &mut bool) -> current_mp3<'a> {
+        // TODO(DeltaManiac): Move Audio Code to a better location.
+        println!("Called Music");
+    
+        if !*is_playing {
+            let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
+            //let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
+            let tag = current_mp3::new(Some(&mut file));
+            print_mp3_tag(&mut file);
+            if sink.empty() {
+                println!("Sink is empty and not playing");
+                sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+        } else {
+            sink.play();
+        }
+        *is_playing = true;
+        tag
+    } else {
+        sink.pause();
+            if sink.empty() {
+                println!("Sink is empty");
+        }
+        *is_playing = false;
+            current_mp3::new(None)
+    }
+    
 }
 
 #[derive(Debug)]
