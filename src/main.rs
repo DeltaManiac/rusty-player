@@ -2,6 +2,7 @@ extern crate rodio;
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::borrow::Cow;
+use std::path::Path;
 #[macro_use]
 extern crate conrod;
 
@@ -11,7 +12,7 @@ fn main() {
 
 use conrod::{
     backend::glium::glium::{self, Surface},
-    widget, Colorable, Positionable, Widget,
+    widget, Colorable, Positionable, Widget,Sizeable
 };
 
 
@@ -57,16 +58,24 @@ fn init() {
     text_artist,
     text_album,
         text_year,
+    file_navigator,
     }
     );
+        
+        ////////////////////////////////////////////
+        // NOTE(DeltaManiac): Fix this
+        let mut curr_file_path ="./assets/test.mp3";
         let mut curr_file = current_mp3::new(None);
+        // NOTE(DeltaManiac): Move this to a struct perhaps ?
+        let device = rodio::default_output_device().unwrap();
+        let mut sink = rodio::Sink::new(&device);
+        let mut is_playing = false;
+        let mut is_opening = false;
+    /////////////////////////////////////////////
     let ids = Ids::new(ui.widget_id_generator());
     ui.fonts.insert_from_file("./assets/Potra.ttf").unwrap();
     let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
-    // NOTE(DeltaManiac): Move this to a struct perhaps ?
-    let device = rodio::default_output_device().unwrap();
-    let mut sink = rodio::Sink::new(&device);
-    let mut is_playing = false;
+    
     // NOTE(DeltaManiac): Here starts the main loop
     'main: loop {
         event_queue.clear();
@@ -101,10 +110,26 @@ fn init() {
                             },
                         ..
                     } => {
-                        curr_file = play_music(&mut sink, &mut is_playing);
+                        curr_file = play_music(&mut sink, &mut is_playing,curr_file_path);
                             //println!("PRESSEED P:{:?}",curr_file);
                             ()
-                    }
+                    },
+                             glium::glutin::WindowEvent::KeyboardInput {
+                             input:
+                             glium::glutin::KeyboardInput {
+                             virtual_keycode: Some(glium::glutin::VirtualKeyCode::O),
+                             state: glium::glutin::ElementState::Pressed,
+                             ..
+                             },
+                             ..
+                             } => {
+                             if !is_opening{
+                             is_opening = true;
+                             } else {
+                             is_opening = false;
+                             }
+                             ()
+                              }
                     _ => (),
                 },
                 _ => (),
@@ -160,6 +185,28 @@ fn init() {
                              .color(conrod::color::LIGHT_YELLOW)
                              .font_size(28)
                              .set(ids.text, ui);
+                              if is_opening{
+                              for event in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
+                              .color(conrod::color::BLUE)
+                              .text_color(conrod::color::GREEN)
+                              .unselected_color(conrod::color::BLACK)
+                              .font_size(16)
+                              .wh_of(ui.window)
+                              .top_left_of(ui.window)
+                              //.show_hidden_files(true)  // Use this to show hidden files
+                              .set(ids.file_navigator, ui){
+                              println!("{:?}",event);
+                              /*match event {
+                              widget::file_navigator::Event::ChangeSelection(std::vec::Vec<std::path::PathBuf>) =>{
+                              ()
+                              }
+                              _ =>(),
+                              }*/
+                              
+                              };
+                              }
+                              
+                              
                              }
                              //println!("{:?}",a);
             if let Some(primitives) = ui.draw_if_changed() {
@@ -172,38 +219,13 @@ fn init() {
         }
     }
 }
-/*
-fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
-    // TODO(DeltaManiac): Move Audio Code to a better location.
-    println!("Called Music");
 
-    if !*is_playing {
-        //let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
-            let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
-        print_mp3_tag(&mut file);
-        if sink.empty() {
-            println!("Sink is empty and not playing");
-            sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
-        } else {
-            sink.play();
-        }
-        *is_playing = true;
-    } else {
-        sink.pause();
-        if sink.empty() {
-            println!("Sink is empty");
-        }
-        *is_playing = false;
-    }
-}
-
-*/
-fn play_music<'a>(sink: &mut rodio::Sink, is_playing: &mut bool) -> current_mp3<'a> {
+fn play_music<'a>(sink: &mut rodio::Sink, is_playing: &mut bool,path:&str) -> current_mp3<'a> {
         // TODO(DeltaManiac): Move Audio Code to a better location.
         println!("Called Music");
     
         if !*is_playing {
-            let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
+            let mut file = std::fs::File::open(path).unwrap();
             //let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
             let tag = current_mp3::new(Some(&mut file));
             print_mp3_tag(&mut file);
