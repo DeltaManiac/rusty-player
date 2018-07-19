@@ -180,7 +180,7 @@ fn init() {
                              
                              
                              } else {
-                             widget::Text::new("Press P to Play!")
+                             widget::Text::new("Press P to Play!\nPress O to Open/Close Files!")
                              .middle_of(ui.window)
                              .color(conrod::color::LIGHT_YELLOW)
                              .font_size(28)
