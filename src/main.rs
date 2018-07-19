@@ -1,6 +1,7 @@
 extern crate rodio;
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
+use std::borrow::Cow;
 #[macro_use]
 extern crate conrod;
 
@@ -109,8 +110,8 @@ fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
     println!("Called Music");
 
     if !*is_playing {
-        //let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
-        let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
+        let mut file = std::fs::File::open("./assets/test.mp3").unwrap();
+        //let mut file = std::fs::File::open("./assets/def.mp3").unwrap();
         print_mp3_tag(&mut file);
         if sink.empty() {
             println!("Sink is empty and not playing");
@@ -130,19 +131,19 @@ fn play_music(sink: &mut rodio::Sink, is_playing: &mut bool) {
 
 #[derive(Debug)]
 struct Id3V1<'a> {
-    title: &'a str,
-    artist: &'a str,
-    year: &'a str,
-    album: &'a str,
+    title: Cow<'a, str>,
+    artist: Cow<'a, str>,
+        year: Cow<'a, str>,
+        album:  Cow<'a, str>,
 }
 
 impl<'a> Id3V1<'a> {
     pub fn new() -> Id3V1<'a> {
         Id3V1 {
-            title: "Untitled",
-            artist: "Unknown",
-            year: "Unknown",
-            album: "Unknown",
+                title: Cow::Borrowed("Untitled"),
+                artist: Cow::Borrowed("Unknown"),
+year: Cow::Borrowed("Unknown"),
+                album: Cow::Borrowed("Unknown"),
         }
     }
 
@@ -153,32 +154,19 @@ impl<'a> Id3V1<'a> {
         file.read_to_end(&mut data);
         // NOTE(DeltaManiac): TAG == TAG
         if (data[0], data[1], data[2]) == (84, 65, 71) {
-            println!(
-                "Title: {:?}",
-                std::str::from_utf8(&data[3..33])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-            );
-            println!(
-                "Artist:{:?}",
-                std::str::from_utf8(&data[33..63])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-            );
-            println!(
-                "Album:{:?}",
-                std::str::from_utf8(&data[63..93])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-            );
-            println!(
-                "Year:{:?}",
-                std::str::from_utf8(&data[93..97])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-            );
-            // TODO: FIX THIS :(
-            //tag_data.title = std::str::from_utf8(&data[3..33]).unwrap().trim_matches(|char| char == '\0');
+            
+                tag_data.title = Cow::Owned(std::str::from_utf8(&data[3..33])
+                .unwrap()
+                .trim_matches(|char| char == '\0').to_string());
+                tag_data.artist = Cow::Owned(std::str::from_utf8(&data[33..63])
+                .unwrap()
+                .trim_matches(|char| char == '\0').to_string());
+                tag_data.album = Cow::Owned(std::str::from_utf8(&data[63..93])
+                .unwrap()
+                .trim_matches(|char| char == '\0').to_string());
+                tag_data.year = Cow::Owned(std::str::from_utf8(&data[93..97])
+                .unwrap()
+                .trim_matches(|char| char == '\0').to_string());
         }
         tag_data
     }
