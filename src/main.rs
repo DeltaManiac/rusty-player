@@ -182,7 +182,7 @@ fn init() {
                     .font_size(28)
                     .set(ids.text, ui);
                 if is_opening {
-                    for event in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
+                    for _event  in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
                               .color(conrod::color::BLUE)
                               .text_color(conrod::color::GREEN)
                               .unselected_color(conrod::color::BLACK)
@@ -192,13 +192,18 @@ fn init() {
                               //.show_hidden_files(true)  // Use this to show hidden files
                               .set(ids.file_navigator, ui)
                     {
-                        println!("{:?}", event);
-                        /*match event {
-                              widget::file_navigator::Event::ChangeSelection(std::vec::Vec<std::path::PathBuf>) =>{
+                              //println!("{:?}", _event);
+                              // TODO(DeltaManiac): Better event handling
+                              let mut a:Vec<std::path::PathBuf> = Vec::new(); 
+                              match _event {
+                              widget::file_navigator::Event::DoubleClick(_,a) =>{
+                              println!("{:?}",a);
+                              //curr_file_path = &a[0].to_str().unwrap();
                               ()
                               }
                               _ =>(),
-                              }*/
+                              }
+                        
                     }
                 }
             }
