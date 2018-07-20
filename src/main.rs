@@ -49,7 +49,7 @@ fn init() {
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
     let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
     // NOTE(DeltaManiac): Recheck this
-    widget_ids!(struct Ids { 
+    widget_ids!(struct Ids {
             text,
         text_info,
             text_title,
@@ -182,7 +182,7 @@ fn init() {
                     .font_size(28)
                     .set(ids.text, ui);
                 if is_opening {
-                    for _event  in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
+                    for _event in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
                               .color(conrod::color::BLUE)
                               .text_color(conrod::color::GREEN)
                               .unselected_color(conrod::color::BLACK)
@@ -192,18 +192,17 @@ fn init() {
                               //.show_hidden_files(true)  // Use this to show hidden files
                               .set(ids.file_navigator, ui)
                     {
-                              //println!("{:?}", _event);
-                              // TODO(DeltaManiac): Better event handling
-                              let mut a:Vec<std::path::PathBuf> = Vec::new(); 
-                              match _event {
-                              widget::file_navigator::Event::DoubleClick(_,a) =>{
-                              println!("{:?}",a);
-                              //curr_file_path = &a[0].to_str().unwrap();
-                              ()
-                              }
-                              _ =>(),
-                              }
-                        
+                        //println!("{:?}", _event);
+                        // TODO(DeltaManiac): Better event handling
+                        let mut a: Vec<std::path::PathBuf> = Vec::new();
+                        match _event {
+                            widget::file_navigator::Event::DoubleClick(_, a) => {
+                                println!("{:?}", a);
+                                //curr_file_path = &a[0].to_str().unwrap();
+                                ()
+                            }
+                            _ => (),
+                        }
                     }
                 }
             }
