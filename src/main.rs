@@ -6,14 +6,137 @@ use std::path::Path;
 #[macro_use]
 extern crate conrod;
 
-fn main() {
-    init();
-}
-
 use conrod::{
     backend::glium::glium::{self, Surface},
     widget, Colorable, Positionable, Sizeable, Widget,
 };
+
+
+fn main() {
+    //init();
+    //Better Window
+        init_2();
+}
+
+
+fn init_2() {
+        let (width, height) = (800, 600);
+        let window = glium::glutin::WindowBuilder::new()
+        .with_title("rs-player")
+         .with_dimensions(width,height)
+        // TODO(DeltaManiac): Find out why this doesnt work
+        //.with_resizable(false)
+        .with_decorations(false);
+        let mut context = glium::glutin::ContextBuilder::new()
+        .with_vsync(true)
+        .with_multisampling(4);
+        let mut event_loop = glium::glutin::EventsLoop::new();
+        let mut event_queue = Vec::new();
+        let display = glium::Display::new(window, context, &event_loop).unwrap();
+        //let mut event_queue = Vec::new();
+        let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
+        let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
+        let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
+        widget_ids! {
+            struct Ids {
+                master,
+                play_bar,
+            play_list,
+        dummy,
+        }
+    }
+        let mut ids = Ids::new(ui.widget_id_generator());
+        ui.fonts.insert_from_file("./assets/Potra.ttf").unwrap();
+'main: loop {
+            event_queue.clear();
+        event_loop.poll_events(|event| {
+                event_queue.push(event);
+        });
+    
+        if event_queue.is_empty(){
+                event_loop.run_forever(|event| {
+                    event_queue.push(event);
+                    glium::glutin::ControlFlow::Break
+            });
+        
+        }
+        for event in event_queue.drain(..){
+                match event.clone(){
+                    glium::glutin::Event::WindowEvent{event,..} => match event {
+                glium::glutin::WindowEvent::Closed |
+                        glium::glutin::WindowEvent::KeyboardInput {
+                            input: glium::glutin::KeyboardInput {
+                                virtual_keycode:Some(glium::glutin::VirtualKeyCode::Escape),
+                            ..
+                        },
+                        ..
+                    } => break 'main,
+                    _ =>(),
+                } // match event
+                _ =>(),
+            } //event.clone
+        }
+        init_ui(ui.set_widgets(),&mut ids);
+            if let Some(primitives) = ui.draw_if_changed() {
+                renderer.fill(&display, primitives, &image_map);
+                let mut target = display.draw();
+                target.clear_color(0.0, 0.0, 0.0, 1.0);
+                renderer.draw(&display, &mut target, &image_map).unwrap();
+                target.finish().unwrap();
+        }
+        
+    };//event_queue.drain
+    
+    /*
+    Create the UI as follows
+      ----------------------
+      |    |              /|
+    |    |               |
+    |play|    ???        |
+    |list|               |
+    |    |               |
+    |    |               |
+    ----------------------
+    |       playbar      |
+    ----------------------
+    */
+    fn init_ui(ref mut ui:conrod::UiCell,ids: &mut Ids){
+            
+            
+            let mut list:Vec<u16> = Vec::new();
+            list.push(1);
+            
+            use conrod::{color, widget, Colorable, Labelable, Positionable, Sizeable, Widget};
+            widget::Canvas::new().flow_down(&[
+                (ids.play_list, widget::Canvas::new()
+                 .color(color::BLUE)
+                 .length_weight(75.0)),
+                 (ids.play_bar, widget::Canvas::new()
+                  .color(color::RED)
+                  .length_weight(25.0)
+                  .scroll_kids_vertically()),
+        ])
+                  //.color(color::YELLOW)
+            //.top_left_of(ui.window)
+                  .set(ids.master,ui);
+                  
+                  
+                  let  (mut even, scrollbar) = widget::ListSelect::multiple(list.len())
+                  .flow_down()
+                  .item_size(30.0)
+                  .scrollbar_next_to()
+                  .w_h(400.0,230.0)
+                  .set(ids.dummy,ui);
+                  
+                  }
+    
+}
+
+
+
+
+
+//-----------------------------------------------------------------------------------------\\
 
 struct current_mp3<'a> {
     idx: u32,
