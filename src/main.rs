@@ -37,6 +37,8 @@ fn init_2() {
         let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
         let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
         let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
+        let mut list = vec![true; 16];
+    
         widget_ids! {
             struct Ids {
                 master,
@@ -44,6 +46,8 @@ fn init_2() {
                 play_area,
                 play_list,
                 dummy,
+            canvas,
+            list
         }
     }
     let mut ids = Ids::new(ui.widget_id_generator());
@@ -76,7 +80,17 @@ fn init_2() {
                 } // match event
                 _ =>(),
             } //event.clone
+        
+            let input = match conrod::backend::winit::convert_event(event, &display) {
+                    None => continue,
+                    Some(input) => input,
+            };
+            ui.handle_event(input);
+            
         }
+        
+        
+        //set_ui(ui.set_widgets(), &mut list, &ids);
         init_ui(ui.set_widgets(),&mut ids);
             if let Some(primitives) = ui.draw_if_changed() {
                 println!("UI HAS CHANGED");
@@ -88,6 +102,41 @@ fn init_2() {
         }
         
     };//event_queue.drain
+    
+    
+    // Declare the `WidgetId`s and instantiate the widgets.
+    fn set_ui(ref mut ui: conrod::UiCell, list: &mut [bool], ids: &Ids) {
+            use conrod::{widget, Colorable, Labelable, Positionable, Sizeable, Widget};
+        
+            widget::Canvas::new().color(conrod::color::DARK_CHARCOAL).set(ids.canvas, ui);
+        
+            let (mut items, scrollbar) = widget::List::flow_down(list.len())
+            .item_size(50.0)
+            .scrollbar_on_top()
+            .middle_of(ids.canvas)
+            .wh_of(ids.canvas)
+            .set(ids.list, ui);
+        
+            while let Some(item) = items.next(ui) {
+                let i = item.i;
+                let label = format!("item {}: {}", i, list[i]);
+                let toggle = widget::Toggle::new(list[i])
+                .label(&label)
+                .label_color(conrod::color::WHITE)
+                .color(conrod::color::LIGHT_BLUE);
+                for v in item.set(toggle, ui) {
+                    list[i] = v;
+            }
+        }
+        
+        if let Some(s) = scrollbar { s.set(ui) }
+    }
+    
+    
+    
+    
+    
+    
     
     /*
     Create the UI as follows
@@ -118,74 +167,28 @@ fn init_2() {
                   .length_weight(25.0)
                   .scroll_kids_vertically()),
                   ])
-                  //.color(color::YELLOW)
-                  //.top_left_of(ui.window)
                   .set(ids.master,ui);
                   
                   
                   // Temp list of items
                   let mut list:Vec<u16> = Vec::new();
-                  list.push(1);
-                  list.push(2);
-                  list.push(3);
-                  list.push(4);
-                  list.push(5);
-                  list.push(6);
-                  list.push(7);
-                  list.push(8);
-                  list.push(9);
-                  list.push(10);
-                  list.push(11);
-                  list.push(12);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
-                  list.push(13);
+                  for i in 0..110 {
                   
+                  list.push(i);
+                  }
                   
-                  //let (mut items, scrollbar) = widget::List::flow_down(list.len())
-                  //.flow_down(list.len())
-                  //let (mut events, scrollbar) = //widget::ListSelect::single(list.len())
-                  //.flow_down()
-                  
-                  let (mut items, scrollbar) = widget::List::flow_down(list.len())
+                  let (mut events, scrollbar) = widget::ListSelect::single(list.len())
+                  .flow_down()
                   .item_size(20.0)
                   .scrollbar_next_to()
-                  //.wh_of(ids.play_area)
-                  .w_h(200.0,100.0)
-                  //.instantiate_all_items()
+                  .w(200.0)
+                  .h_of(ids.play_area)
                   .top_left_of(ids.play_area)
                   .set(ids.play_list,ui);
                   
-                  //FOR LIST
-                  while let Some(item) = items.next(ui) {
-                  let idx = item.i;
-                  let text = format!("i={}",list[idx]);
-                  let ctrl = widget::Button::new()
-                  .label(&text)
-                  .color(color::LIGHT_YELLOW);
-                  //.font_size(28);
-                  item.set(ctrl, ui);
-                  println!("{:?}",item);
-                  }
                   if let Some(s) = scrollbar { s.set(ui); }
                   
-                  /*
+                  
                   let mut is_selected = false;
                   //FOR LIST SELECT
                   while let Some(event) = events.next(ui,|i| list.contains(&(i as u16))) {
@@ -199,16 +202,13 @@ fn init_2() {
                   .color(color::LIGHT_YELLOW)
                   .font_size(15);
                   item.set(ctrl, ui);
-                  
-                  
-                  println!("{:?}", &event);
                   ()
                   },
                   event => println!("anything ekse {:?}", &event),
                   }// End of Match
                   }//End of while
                   
-                  */
+                  
                   }
                   
                   
