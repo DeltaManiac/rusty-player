@@ -35,12 +35,12 @@ fn init_2() {
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
     let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
     let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
-        let mut list: Vec<u16> = Vec::new();
-        // Temp list of items
-        for i in 0..110 {
+    let mut list: Vec<u16> = Vec::new();
+    // Temp list of items
+    for i in 0..110 {
         list.push(i);
     }
-        widget_ids! {
+    widget_ids! {
             struct Ids {
                 master,
                 play_bar,
@@ -88,7 +88,7 @@ fn init_2() {
             };
             ui.handle_event(input);
         }
-        
+
         init_ui(ui.set_widgets(), &mut ids, &mut list);
         if let Some(primitives) = ui.draw_if_changed() {
             println!("UI HAS CHANGED");
@@ -113,7 +113,7 @@ fn init_2() {
     |       playbar      |
     ----------------------
     */
-    fn init_ui(ref mut ui: conrod::UiCell, ids: &mut Ids,list:&mut Vec<u16>) {
+    fn init_ui(ref mut ui: conrod::UiCell, ids: &mut Ids, list: &mut Vec<u16>) {
         use conrod::{color, widget, Colorable, Labelable, Positionable, Sizeable, Widget};
 
         widget::Canvas::new()
@@ -147,19 +147,19 @@ fn init_2() {
         }
 
         //let (mut events, scrollbar) = widget::ListSelect::single(list.len())
-        let (mut events, scrollbar) = widget::ListSelect::new(list.len(),conrod::widget::list_select::Multiple)
-            .flow_down()
-            .item_size(20.0)
-            .scrollbar_next_to()
-            .instantiate_all_items()
-            .w(200.0)
-            .h_of(ids.play_area)
-            .top_left_of(ids.play_area)
-            .set(ids.play_list, ui);
+        let (mut events, scrollbar) =
+            widget::ListSelect::new(list.len(), conrod::widget::list_select::Multiple)
+                .flow_down()
+                .item_size(20.0)
+                .scrollbar_next_to()
+                .instantiate_all_items()
+                .w(200.0)
+                .h_of(ids.play_area)
+                .top_left_of(ids.play_area)
+                .set(ids.play_list, ui);
 
         if let Some(s) = scrollbar {
             s.set(ui);
-                
         }
 
         let mut is_selected = false;
