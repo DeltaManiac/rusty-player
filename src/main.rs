@@ -40,12 +40,14 @@ fn init_2() {
     for i in 0..110 {
         list.push(i);
     }
+    let mut is_adding_file = false;
     widget_ids! {
             struct Ids {
                 master,
                 play_bar,
                 play_area,
                 play_list,
+                play_file_navigator,
                 dummy,
         }
     }
@@ -89,9 +91,8 @@ fn init_2() {
             ui.handle_event(input);
         }
 
-        init_ui(ui.set_widgets(), &mut ids, &mut list);
+        init_ui(ui.set_widgets(), &mut ids, &mut list,&mut is_adding_file);
         if let Some(primitives) = ui.draw_if_changed() {
-            println!("UI HAS CHANGED");
             renderer.fill(&display, primitives, &image_map);
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -113,7 +114,7 @@ fn init_2() {
     |       playbar      |
     ----------------------
     */
-    fn init_ui(ref mut ui: conrod::UiCell, ids: &mut Ids, list: &mut Vec<u16>) {
+    fn init_ui(ref mut ui: conrod::UiCell, ids: &mut Ids, list: &mut Vec<u16>,  is_adding_file:&mut bool) {
         use conrod::{color, widget, Colorable, Labelable, Positionable, Sizeable, Widget};
 
         widget::Canvas::new()
@@ -136,50 +137,82 @@ fn init_2() {
             .set(ids.master, ui);
 
         for _click in widget::Button::new()
-            .middle_of(ids.master)
+            .middle_of(ids.play_bar)
             .w_h(80.0, 80.0)
-            .label(&list.len().to_string())
+            .label("Open/Close")
             .set(ids.dummy, ui)
         {
-            let len = list.len() as u16;
-            list.push(len);
-            //count += 1;
+            println!("Before:{:?}",is_adding_file);
+            if *is_adding_file {
+                    *is_adding_file =false;
+            } else {
+                *is_adding_file =true;
+            }
+                println!("After:{:?}",is_adding_file);
         }
-
-        //let (mut events, scrollbar) = widget::ListSelect::single(list.len())
-        let (mut events, scrollbar) =
-            widget::ListSelect::new(list.len(), conrod::widget::list_select::Multiple)
-                .flow_down()
-                .item_size(20.0)
-                .scrollbar_next_to()
-                .instantiate_all_items()
-                .w(200.0)
-                .h_of(ids.play_area)
+        
+        if *is_adding_file {
+                //We Open the file dialog
+                for _event in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
+                .color(conrod::color::BLUE)
+                .text_color(conrod::color::GREEN)
+                .unselected_color(conrod::color::BLACK)
+                .font_size(16)
+                .wh_of(ui.window)
+                //.top_left_of(ui.window)
                 .top_left_of(ids.play_area)
-                .set(ids.play_list, ui);
-
-        if let Some(s) = scrollbar {
-            s.set(ui);
+                //.show_hidden_files(true)  // Use this to show hidden files
+                .set(ids.play_file_navigator, ui)
+            {
+                // TODO(DeltaManiac): Fix the detection of mp3
+                // TODO(DeltaManiac): Find why PathBuf.ends_with fails
+                    match _event {
+                        widget::file_navigator::Event::DoubleClick(_, items) => {
+                            println!("Selected Items : {:?} ", items);
+                            let files:Vec<std::path::PathBuf> = items.into_iter().take_while(|p| { p.is_file() && p.to_str().unwrap().ends_with(".mp3") }).collect();
+                        println!("Items to be added : {:?} ", files);
+                            *is_adding_file =false;
+                            ()
+                             }
+                             _ => (),
+                             }//End of Match
+                             }
+        } else {
+                             //We show the current list
+                             let (mut events, scrollbar) =
+                             widget::ListSelect::new(list.len(), conrod::widget::list_select::Multiple)
+                             .flow_down()
+                             .item_size(20.0)
+                             .scrollbar_next_to()
+                             .instantiate_all_items()
+                             .w(200.0)
+                             .h_of(ids.play_area)
+                             .top_left_of(ids.play_area)
+                             .set(ids.play_list, ui);
+                             
+                             if let Some(s) = scrollbar {
+                             s.set(ui);
+                             }
+                             
+                             let mut is_selected = false;
+                             //FOR LIST SELECT
+                             while let Some(event) = events.next(ui, |i| list.contains(&(i as u16))) {
+                             use conrod::widget::list_select::Event;
+                             
+                             match event {
+                             Event::Item(item) => {
+                             let idx = item.i;
+                             let text = format!("i={}", list[idx]);
+                             let ctrl = widget::Text::new(&text)
+                             .color(color::LIGHT_YELLOW)
+                             .font_size(15);
+                             item.set(ctrl, ui);
+                             ()
+                              }
+                              event => println!("anything ekse {:?}", &event),
+                              } // End of Match
+                              } //End of while
         }
-
-        let mut is_selected = false;
-        //FOR LIST SELECT
-        while let Some(event) = events.next(ui, |i| list.contains(&(i as u16))) {
-            use conrod::widget::list_select::Event;
-
-            match event {
-                Event::Item(item) => {
-                    let idx = item.i;
-                    let text = format!("i={}", list[idx]);
-                    let ctrl = widget::Text::new(&text)
-                        .color(color::LIGHT_YELLOW)
-                        .font_size(15);
-                    item.set(ctrl, ui);
-                    ()
-                }
-                event => println!("anything ekse {:?}", &event),
-            } // End of Match
-        } //End of while
     }
 }
 
@@ -475,3 +508,4 @@ fn print_mp3_tag(file: &mut File) {
     // NOTE(DeltaManiac): Reset if cursor has moved
     //file.seek(SeekFrom::Start(0));
 }
+s
