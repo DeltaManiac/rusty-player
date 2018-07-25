@@ -1,5 +1,6 @@
 extern crate rodio;
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
@@ -18,10 +19,28 @@ fn main() {
 }
 
 //------------------------------------STRUCTS----------------------------------\\
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 struct PlayListItem<'a> {
     file_name: Cow<'a, str>,
     file_path: Cow<'a, str>,
+}
+
+impl<'a> Ord for PlayListItem<'a> {
+    fn cmp(&self, other: &PlayListItem) -> Ordering {
+        self.file_name.cmp(&other.file_name)
+    }
+}
+
+impl<'a> PartialOrd for PlayListItem<'a> {
+    fn partial_cmp(&self, other: &PlayListItem) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'a> PartialEq for PlayListItem<'a> {
+    fn eq(&self, other: &PlayListItem) -> bool {
+        self.file_name == other.file_name
+    }
 }
 
 #[derive(Debug)]
@@ -227,13 +246,13 @@ fn init_2() {
             .label("Open/Close")
             .set(ids.dummy, ui)
         {
-            println!("Before:{:?}", is_adding_file);
+            //println!("Before:{:?}", is_adding_file);
             if *is_adding_file {
                 *is_adding_file = false;
             } else {
                 *is_adding_file = true;
             }
-            println!("After:{:?}", is_adding_file);
+            //println!("After:{:?}", is_adding_file);
         }
 
         if *is_adding_file {
@@ -260,8 +279,6 @@ fn init_2() {
                             .collect();
                         println!("Items to be added : {:?} ", files);
                         for file in files {
-                            println!("FileName: {:?}", file.file_name());
-                            println!("FileName: {:?}", file.canonicalize());
                             list.push(PlayListItem {
                                 file_name: Cow::Owned(
                                     file.file_name().unwrap().to_str().unwrap().to_string(),
@@ -271,6 +288,8 @@ fn init_2() {
                                 ),
                             });
                         }
+                        list.sort();
+                        list.dedup();
                         println!("list {:?}", list);
                         *is_adding_file = false;
                         ()
@@ -306,8 +325,12 @@ fn init_2() {
                              //.middle_of(ids.play_bar)
                              .w_h(80.0, 80.0)
                              .label(&list[idx].file_name);
-                        item.set(ctrl, ui);
-                        ()
+                             let times_clicked = item.set(ctrl, ui);
+                             for _click in times_clicked
+                             {
+                            println!("PLAY THE SONG");
+                             }
+                             ()
                     }
                               event => ()//println!("anything ekse {:?}", &event),
                 } // End of Match
