@@ -35,11 +35,7 @@ fn init_2() {
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
     let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
     let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
-    let mut list: Vec<u16> = Vec::new();
-    // Temp list of items
-    for i in 0..110 {
-        list.push(i);
-    }
+    let mut list: Vec<String> = Vec::new();
     let mut is_adding_file = false;
     widget_ids! {
             struct Ids {
@@ -117,7 +113,7 @@ fn init_2() {
     fn init_ui(
         ref mut ui: conrod::UiCell,
         ids: &mut Ids,
-        list: &mut Vec<u16>,
+        list: &mut Vec<String>,
         is_adding_file: &mut bool,
     ) {
         use conrod::{color, widget, Colorable, Labelable, Positionable, Sizeable, Widget};
@@ -179,6 +175,12 @@ fn init_2() {
                             .take_while(|p| p.is_file() && p.to_str().unwrap().ends_with(".mp3"))
                             .collect();
                         println!("Items to be added : {:?} ", files);
+                        for file in files {
+                            list.push(file.to_str().unwrap().to_string());
+                        }
+                        list.sort();
+                        list.dedup();
+                        println!("list {:?}", list);
                         *is_adding_file = false;
                         ()
                     }
@@ -204,7 +206,7 @@ fn init_2() {
 
             let mut is_selected = false;
             //FOR LIST SELECT
-            while let Some(event) = events.next(ui, |i| list.contains(&(i as u16))) {
+            while let Some(event) = events.next(ui, |i| true) {
                 use conrod::widget::list_select::Event;
 
                 match event {
@@ -246,11 +248,11 @@ impl<'a> current_mp3<'a> {
 fn init() {
     let (width, height) = (640, 320);
     let window = glium::glutin::WindowBuilder::new()
-                  .with_title("rs-player")
-                  .with_min_dimensions(width,height)
-                  // TODO(DeltaManiac): Find out why this doesnt work
-                  //.with_resizable(false)
-                  .with_decorations(false);
+                              .with_title("rs-player")
+                              .with_min_dimensions(width,height)
+                              // TODO(DeltaManiac): Find out why this doesnt work
+                              //.with_resizable(false)
+                              .with_decorations(false);
     let mut context = glium::glutin::ContextBuilder::new()
         .with_vsync(true)
         .with_multisampling(4);
@@ -261,15 +263,15 @@ fn init() {
     let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
     // NOTE(DeltaManiac): Recheck this
     widget_ids!(struct Ids {
-                  text,
-                  text_info,
-                  text_title,
-                  text_artist,
-                  text_album,
-                  text_year,
-                  file_navigator,
-                  }
-                  );
+                              text,
+                              text_info,
+                              text_title,
+                              text_artist,
+                              text_album,
+                              text_year,
+                              file_navigator,
+                              }
+                              );
 
     ////////////////////////////////////////////
     // NOTE(DeltaManiac): Fix this
@@ -394,14 +396,14 @@ fn init() {
                     .set(ids.text, ui);
                 if is_opening {
                     for _event in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
-                   .color(conrod::color::BLUE)
-                   .text_color(conrod::color::GREEN)
-                   .unselected_color(conrod::color::BLACK)
-                   .font_size(16)
-                   .wh_of(ui.window)
-                   .top_left_of(ui.window)
-                   //.show_hidden_files(true)  // Use this to show hidden files
-                   .set(ids.file_navigator, ui)
+                               .color(conrod::color::BLUE)
+                               .text_color(conrod::color::GREEN)
+                               .unselected_color(conrod::color::BLACK)
+                               .font_size(16)
+                               .wh_of(ui.window)
+                               .top_left_of(ui.window)
+                               //.show_hidden_files(true)  // Use this to show hidden files
+                               .set(ids.file_navigator, ui)
                     {
                         //println!("{:?}", _event);
                         // TODO(DeltaManiac): Better event handling
