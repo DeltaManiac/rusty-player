@@ -17,6 +17,89 @@ fn main() {
     init_2();
 }
 
+//------------------------------------STRUCTS----------------------------------\\
+#[derive(Debug)]
+struct PlayListItem<'a>{
+        file_name:Cow<'a, str>,
+        file_path:Cow<'a, str>,
+}
+
+#[derive(Debug)]
+struct Id3V1<'a> {
+        title: Cow<'a, str>,
+        artist: Cow<'a, str>,
+        year: Cow<'a, str>,
+        album: Cow<'a, str>,
+}
+
+impl<'a> Id3V1<'a> {
+        pub fn new() -> Id3V1<'a> {
+            Id3V1 {
+                title: Cow::Borrowed("Untitled"),
+                artist: Cow::Borrowed("Unknown"),
+                year: Cow::Borrowed("Unknown"),
+                album: Cow::Borrowed("Unknown"),
+        }
+    }
+    
+    pub fn from_file(file: &mut File) -> Id3V1<'a> {
+            println!("Seek end -128{:?}", file.seek(SeekFrom::End(-128)));
+            let mut tag_data = Id3V1::new();
+            let mut data: Vec<u8> = Vec::new();
+            file.read_to_end(&mut data);
+            // NOTE(DeltaManiac): TAG == TAG
+            if (data[0], data[1], data[2]) == (84, 65, 71) {
+                tag_data.title = Cow::Owned(
+                std::str::from_utf8(&data[3..33])
+                .unwrap()
+                .trim_matches(|char| char == '\0')
+                .to_string(),
+                );
+                tag_data.artist = Cow::Owned(
+                std::str::from_utf8(&data[33..63])
+                .unwrap()
+                .trim_matches(|char| char == '\0')
+                .to_string(),
+                );
+                tag_data.album = Cow::Owned(
+                std::str::from_utf8(&data[63..93])
+                .unwrap()
+                .trim_matches(|char| char == '\0')
+                .to_string(),
+                );
+                tag_data.year = Cow::Owned(
+                std::str::from_utf8(&data[93..97])
+                .unwrap()
+                .trim_matches(|char| char == '\0')
+                .to_string(),
+                );
+        }
+        file.seek(SeekFrom::Start(0));
+            tag_data
+    }
+}
+
+#[derive(Debug)]
+struct current_mp3<'a> {
+        idx: u32,
+        id3v1_tag: Id3V1<'a>,
+}
+
+impl<'a> current_mp3<'a> {
+        pub fn new(file: Option<&mut File>) -> current_mp3<'a> {
+            let tag = match file {
+                Some(file) => Id3V1::from_file(file),
+                None => Id3V1::new(),
+        };
+        current_mp3 {
+                idx: 0,
+                id3v1_tag: tag,
+        }
+    }
+}
+
+//--------------------------------------II-------------------------------------\\
+
 fn init_2() {
     let (width, height) = (800, 600);
     let window = glium::glutin::WindowBuilder::new()
@@ -35,8 +118,9 @@ fn init_2() {
     let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
     let mut ui = conrod::UiBuilder::new([width as f64, height as f64]).build();
     let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
-    let mut list: Vec<String> = Vec::new();
-    let mut is_adding_file = false;
+    //let mut list: Vec<String> = Vec::new();
+        let mut list: Vec<PlayListItem> = Vec::new();
+        let mut is_adding_file = false;
     widget_ids! {
             struct Ids {
                 master,
@@ -113,7 +197,7 @@ fn init_2() {
     fn init_ui(
         ref mut ui: conrod::UiCell,
         ids: &mut Ids,
-        list: &mut Vec<String>,
+        list: &mut Vec<PlayListItem>,
         is_adding_file: &mut bool,
     ) {
         use conrod::{color, widget, Colorable, Labelable, Positionable, Sizeable, Widget};
@@ -154,7 +238,7 @@ fn init_2() {
 
         if *is_adding_file {
             //We Open the file dialog
-            for _event in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
+            for _event in widget::FileNavigator::with_extension(&Path::new("/"), &["mp3"])
                 .color(conrod::color::BLUE)
                 .text_color(conrod::color::GREEN)
                 .unselected_color(conrod::color::BLACK)
@@ -176,10 +260,13 @@ fn init_2() {
                             .collect();
                         println!("Items to be added : {:?} ", files);
                         for file in files {
-                            list.push(file.to_str().unwrap().to_string());
+                                println!("FileName: {:?}", file.file_name());
+                                println!("FileName: {:?}", file.canonicalize());
+                            list.push( PlayListItem{
+                                    file_name :Cow::Owned(file.file_name().unwrap().to_str().unwrap().to_string()),
+                                    file_path:Cow::Owned(file.canonicalize().unwrap().to_str().unwrap().to_string()),
+                            });
                         }
-                        list.sort();
-                        list.dedup();
                         println!("list {:?}", list);
                         *is_adding_file = false;
                         ()
@@ -208,42 +295,24 @@ fn init_2() {
             //FOR LIST SELECT
             while let Some(event) = events.next(ui, |i| true) {
                 use conrod::widget::list_select::Event;
-
                 match event {
                     Event::Item(item) => {
                         let idx = item.i;
-                        let text = format!("i={}", list[idx]);
-                        let ctrl = widget::Text::new(&text)
-                            .color(color::LIGHT_YELLOW)
-                            .font_size(15);
+                             let ctrl = widget::Button::new()
+                             //.middle_of(ids.play_bar)
+                             .w_h(80.0, 80.0)
+                             .label(&list[idx].file_name);
                         item.set(ctrl, ui);
                         ()
                     }
-                    event => println!("anything ekse {:?}", &event),
+                              event => ()//println!("anything ekse {:?}", &event),
                 } // End of Match
             } //End of while
         }
     }
 }
 
-//-----------------------------------------------------------------------------------------\\
-
-struct current_mp3<'a> {
-    idx: u32,
-    id3v1_tag: Id3V1<'a>,
-}
-impl<'a> current_mp3<'a> {
-    pub fn new(file: Option<&mut File>) -> current_mp3<'a> {
-        let tag = match file {
-            Some(file) => Id3V1::from_file(file),
-            None => Id3V1::new(),
-        };
-        current_mp3 {
-            idx: 0,
-            id3v1_tag: tag,
-        }
-    }
-}
+//----------------------------------------------I-------------------------------------------\\
 
 fn init() {
     let (width, height) = (640, 320);
@@ -455,61 +524,6 @@ fn play_music<'a>(sink: &mut rodio::Sink, is_playing: &mut bool, path: &str) -> 
         }
         *is_playing = false;
         current_mp3::new(None)
-    }
-}
-
-#[derive(Debug)]
-struct Id3V1<'a> {
-    title: Cow<'a, str>,
-    artist: Cow<'a, str>,
-    year: Cow<'a, str>,
-    album: Cow<'a, str>,
-}
-
-impl<'a> Id3V1<'a> {
-    pub fn new() -> Id3V1<'a> {
-        Id3V1 {
-            title: Cow::Borrowed("Untitled"),
-            artist: Cow::Borrowed("Unknown"),
-            year: Cow::Borrowed("Unknown"),
-            album: Cow::Borrowed("Unknown"),
-        }
-    }
-
-    pub fn from_file(file: &mut File) -> Id3V1<'a> {
-        println!("Seek end -128{:?}", file.seek(SeekFrom::End(-128)));
-        let mut tag_data = Id3V1::new();
-        let mut data: Vec<u8> = Vec::new();
-        file.read_to_end(&mut data);
-        // NOTE(DeltaManiac): TAG == TAG
-        if (data[0], data[1], data[2]) == (84, 65, 71) {
-            tag_data.title = Cow::Owned(
-                std::str::from_utf8(&data[3..33])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-                    .to_string(),
-            );
-            tag_data.artist = Cow::Owned(
-                std::str::from_utf8(&data[33..63])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-                    .to_string(),
-            );
-            tag_data.album = Cow::Owned(
-                std::str::from_utf8(&data[63..93])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-                    .to_string(),
-            );
-            tag_data.year = Cow::Owned(
-                std::str::from_utf8(&data[93..97])
-                    .unwrap()
-                    .trim_matches(|char| char == '\0')
-                    .to_string(),
-            );
-        }
-        file.seek(SeekFrom::Start(0));
-        tag_data
     }
 }
 
