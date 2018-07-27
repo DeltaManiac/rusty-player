@@ -22,7 +22,8 @@ fn main() {
 #[derive(Debug, Eq)]
 struct PlayListItem<'a> {
     file_name: Cow<'a, str>,
-    file_path: Cow<'a, str>,
+    file_path: Cow<'a, std::path::PathBuf>,
+    playing: bool,
 }
 
 impl<'a> Ord for PlayListItem<'a> {
@@ -257,7 +258,7 @@ fn init_2() {
 
         if *is_adding_file {
             //We Open the file dialog
-            for _event in widget::FileNavigator::with_extension(&Path::new("/"), &["mp3"])
+            for _event in widget::FileNavigator::with_extension(&Path::new("."), &["mp3"])
                 .color(conrod::color::BLUE)
                 .text_color(conrod::color::GREEN)
                 .unselected_color(conrod::color::BLACK)
@@ -284,8 +285,9 @@ fn init_2() {
                                     file.file_name().unwrap().to_str().unwrap().to_string(),
                                 ),
                                 file_path: Cow::Owned(
-                                    file.canonicalize().unwrap().to_str().unwrap().to_string(),
+                                    file.canonicalize().unwrap(), //.to_str().unwrap().to_string(),
                                 ),
+                                playing: false,
                             });
                         }
                         list.sort();
@@ -328,7 +330,21 @@ fn init_2() {
                              let times_clicked = item.set(ctrl, ui);
                              for _click in times_clicked
                              {
-                            println!("PLAY THE SONG");
+                             //println!("{:?}",&list[idx].file_path.to_owned());
+                             let device = rodio::default_output_device().unwrap();
+                             let mut sink = rodio::Sink::new(&device);
+                             let mut file = std::fs::File::open((&list[idx]).file_path.to_str().unwrap() ).unwrap();
+                             println!("{:?}", Id3V1::from_file(&mut file));
+                             println!("{:?}",file.metadata());
+                             if sink.empty() {
+                             println!("Sink is empty and not playing");
+                             sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+                             sink.sleep_until_end();
+                             //sink.play();
+                             } else {
+                             sink.play();
+                             }
+                             println!("PLAY THE SONG");
                              }
                              ()
                     }
