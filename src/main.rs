@@ -141,7 +141,10 @@ fn init_2() {
     //let mut list: Vec<String> = Vec::new();
     let mut list: Vec<PlayListItem> = Vec::new();
     let mut is_adding_file = false;
-    widget_ids! {
+        let device = rodio::default_output_device().unwrap();
+        let mut sink = rodio::Sink::new(&device);
+    
+        widget_ids! {
             struct Ids {
                 master,
                 play_bar,
@@ -191,7 +194,7 @@ fn init_2() {
             ui.handle_event(input);
         }
 
-        init_ui(ui.set_widgets(), &mut ids, &mut list, &mut is_adding_file);
+        init_ui(ui.set_widgets(), &mut ids, &mut list, &mut is_adding_file, &mut sink);
         if let Some(primitives) = ui.draw_if_changed() {
             renderer.fill(&display, primitives, &image_map);
             let mut target = display.draw();
@@ -219,7 +222,8 @@ fn init_2() {
         ids: &mut Ids,
         list: &mut Vec<PlayListItem>,
         is_adding_file: &mut bool,
-    ) {
+        sink: &mut rodio::Sink,
+        ) {
         use conrod::{color, widget, Colorable, Labelable, Positionable, Sizeable, Widget};
 
         widget::Canvas::new()
@@ -331,16 +335,18 @@ fn init_2() {
                              for _click in times_clicked
                              {
                              //println!("{:?}",&list[idx].file_path.to_owned());
-                             let device = rodio::default_output_device().unwrap();
-                             let mut sink = rodio::Sink::new(&device);
                              let mut file = std::fs::File::open((&list[idx]).file_path.to_str().unwrap() ).unwrap();
                              println!("{:?}", Id3V1::from_file(&mut file));
+                             //let device = rodio::default_output_device().unwrap();
+                             //let mut sink = rodio::Sink::new(&device);
+                             
                              println!("{:?}",file.metadata());
+                             
                              if sink.empty() {
                              println!("Sink is empty and not playing");
                              sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
-                             sink.sleep_until_end();
-                             //sink.play();
+                             //sink.sleep_until_end();
+                             sink.stop();
                              } else {
                              sink.play();
                              }
