@@ -1,9 +1,12 @@
 extern crate rodio;
 use std::borrow::Cow;
 use std::cmp::Ordering;
+use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
+use std::sync::Arc;
+use std::thread;
 #[macro_use]
 extern crate conrod;
 
@@ -15,36 +18,13 @@ use conrod::{
 fn main() {
     //init();
     //Better Window
-    init_2();
+    //init_2();
+    println!("DONE");
 }
 
 //------------------------------------STRUCTS----------------------------------\\
+
 #[derive(Debug, Eq)]
-struct PlayListItem<'a> {
-    file_name: Cow<'a, str>,
-    file_path: Cow<'a, std::path::PathBuf>,
-    playing: bool,
-}
-
-impl<'a> Ord for PlayListItem<'a> {
-    fn cmp(&self, other: &PlayListItem) -> Ordering {
-        self.file_name.cmp(&other.file_name)
-    }
-}
-
-impl<'a> PartialOrd for PlayListItem<'a> {
-    fn partial_cmp(&self, other: &PlayListItem) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<'a> PartialEq for PlayListItem<'a> {
-    fn eq(&self, other: &PlayListItem) -> bool {
-        self.file_name == other.file_name
-    }
-}
-
-#[derive(Debug)]
 struct Id3V1<'a> {
     title: Cow<'a, str>,
     artist: Cow<'a, str>,
@@ -99,6 +79,61 @@ impl<'a> Id3V1<'a> {
     }
 }
 
+impl<'a> Default for Id3V1<'a> {
+    fn default() -> Id3V1<'a> {
+        Id3V1 {
+            title: Cow::Borrowed("Untitled"),
+            artist: Cow::Borrowed("Unknown"),
+            year: Cow::Borrowed("Unknown"),
+            album: Cow::Borrowed("Unknown"),
+        }
+    }
+}
+
+impl<'a> PartialEq for Id3V1<'a> {
+    fn eq(&self, other: &Id3V1) -> bool {
+        self.title == other.title
+            && self.artist == other.artist
+            && self.album == other.album
+            && self.year == other.year
+    }
+}
+
+#[derive(Default)]
+struct PlayListItem<'a> {
+    file_name: Cow<'a, str>,
+    file_path: Cow<'a, std::path::PathBuf>,
+    sink: Option<&'a rodio::Sink>,
+    playing: bool,
+    id3v1: Box<Id3V1<'a>>,
+}
+
+impl<'a> Ord for PlayListItem<'a> {
+    fn cmp(&self, other: &PlayListItem) -> Ordering {
+        self.file_name.cmp(&other.file_name)
+    }
+}
+
+impl<'a> PartialOrd for PlayListItem<'a> {
+    fn partial_cmp(&self, other: &PlayListItem) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<'a> PartialEq for PlayListItem<'a> {
+    fn eq(&self, other: &PlayListItem) -> bool {
+        self.file_name == other.file_name
+    }
+}
+
+impl<'a> Eq for PlayListItem<'a> {}
+
+impl<'a> fmt::Debug for PlayListItem<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Test")
+    }
+}
+
 #[derive(Debug)]
 struct current_mp3<'a> {
     idx: u32,
@@ -141,10 +176,10 @@ fn init_2() {
     //let mut list: Vec<String> = Vec::new();
     let mut list: Vec<PlayListItem> = Vec::new();
     let mut is_adding_file = false;
-        let device = rodio::default_output_device().unwrap();
-        let mut sink = rodio::Sink::new(&device);
-    
-        widget_ids! {
+    let device = rodio::default_output_device().unwrap();
+    let mut sink = rodio::Sink::new(&device);
+
+    widget_ids! {
             struct Ids {
                 master,
                 play_bar,
@@ -194,7 +229,13 @@ fn init_2() {
             ui.handle_event(input);
         }
 
-        init_ui(ui.set_widgets(), &mut ids, &mut list, &mut is_adding_file, &mut sink);
+        init_ui(
+            ui.set_widgets(),
+            &mut ids,
+            &mut list,
+            &mut is_adding_file,
+            &mut sink,
+        );
         if let Some(primitives) = ui.draw_if_changed() {
             renderer.fill(&display, primitives, &image_map);
             let mut target = display.draw();
@@ -223,7 +264,7 @@ fn init_2() {
         list: &mut Vec<PlayListItem>,
         is_adding_file: &mut bool,
         sink: &mut rodio::Sink,
-        ) {
+    ) {
         use conrod::{color, widget, Colorable, Labelable, Positionable, Sizeable, Widget};
 
         widget::Canvas::new()
@@ -292,6 +333,8 @@ fn init_2() {
                                     file.canonicalize().unwrap(), //.to_str().unwrap().to_string(),
                                 ),
                                 playing: false,
+                                sink: None,
+                                id3v1: Box::new(Default::default()),
                             });
                         }
                         list.sort();
@@ -339,9 +382,7 @@ fn init_2() {
                              println!("{:?}", Id3V1::from_file(&mut file));
                              //let device = rodio::default_output_device().unwrap();
                              //let mut sink = rodio::Sink::new(&device);
-                             
                              println!("{:?}",file.metadata());
-                             
                              if sink.empty() {
                              println!("Sink is empty and not playing");
                              sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
