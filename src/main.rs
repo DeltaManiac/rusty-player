@@ -18,7 +18,7 @@ use conrod::{
 fn main() {
     //init();
     //Better Window
-    //init_2();
+    init_2();
     println!("DONE");
 }
 
@@ -103,10 +103,27 @@ impl<'a> PartialEq for Id3V1<'a> {
 struct PlayListItem<'a> {
     file_name: Cow<'a, str>,
     file_path: Cow<'a, std::path::PathBuf>,
-    sink: Option<&'a rodio::Sink>,
-    playing: bool,
+    sink: Option<Box<rodio::Sink>>,
+        playing: bool,
     id3v1: Box<Id3V1<'a>>,
 }
+
+impl <'a> PlayListItem<'a> {
+    
+        fn init_sink( mut self) {
+            let device = rodio::default_output_device().unwrap();
+            let mut sink = rodio::Sink::new(&device);
+            self.sink= Some(Box::new(sink));
+            
+    }
+
+    fn play_item(mut self) {
+            let mut file = std::fs::File::open(self.file_path.to_str().unwrap()).unwrap();
+            self.sink.unwrap().append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+            self.playing = true;
+    }
+}
+
 
 impl<'a> Ord for PlayListItem<'a> {
     fn cmp(&self, other: &PlayListItem) -> Ordering {
@@ -383,7 +400,7 @@ fn init_2() {
                              //let device = rodio::default_output_device().unwrap();
                              //let mut sink = rodio::Sink::new(&device);
                              println!("{:?}",file.metadata());
-                             if sink.empty() {
+                             /*if sink.empty() {
                              println!("Sink is empty and not playing");
                              sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
                              //sink.sleep_until_end();
@@ -391,6 +408,9 @@ fn init_2() {
                              } else {
                              sink.play();
                              }
+                             */
+                             &list[idx].init_sink();
+                             &list[idx].play_item();
                              println!("PLAY THE SONG");
                              }
                              ()
