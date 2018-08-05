@@ -109,25 +109,23 @@ struct PlayListItem<'a> {
 }
 
 impl<'a> PlayListItem<'a> {
-        
-        fn play(mut self) -> Self{
+    fn play(mut self) -> Self {
         let mut file = std::fs::File::open(self.file_path.to_str().unwrap()).unwrap();
-            let device = rodio::default_output_device().unwrap();
-            let mut sink = rodio::Sink::new(&device);
-            sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
-            self.sink = Some(Box::new(sink));
+        let device = rodio::default_output_device().unwrap();
+        let mut sink = rodio::Sink::new(&device);
+        sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+        self.sink = Some(Box::new(sink));
         self.playing = true;
-    self
-    }
-    
-    fn stop(mut self) -> Self {
-            let a = self.sink.unwrap();
-            a.stop();
-            self.sink=None;
-            self.playing=false;
         self
     }
-    
+
+    fn stop(mut self) -> Self {
+        let a = self.sink.unwrap();
+        a.stop();
+        self.sink = None;
+        self.playing = false;
+        self
+    }
 }
 
 impl<'a> Ord for PlayListItem<'a> {
@@ -391,7 +389,7 @@ fn init_2() {
                 match event {
                     Event::Item(item) => {
                         let idx = item.i;
-                             let fn_name = list[idx].file_name.to_owned(); 
+                             let fn_name = list[idx].file_name.to_owned();
                              let ctrl = widget::Button::new()
                              //.middle_of(ids.play_bar)
                              .w_h(80.0, 80.0)
@@ -400,7 +398,7 @@ fn init_2() {
                              let times_clicked = item.set(ctrl, ui);
                              for _click in times_clicked
                              {
-                             list.iter()
+                             //list.iter()
                              let a = list.remove(idx).play();
                              list.push(a);
                              println!("PLAY THE SONG");
