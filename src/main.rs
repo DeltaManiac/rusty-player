@@ -104,26 +104,31 @@ struct PlayListItem<'a> {
     file_name: Cow<'a, str>,
     file_path: Cow<'a, std::path::PathBuf>,
     sink: Option<Box<rodio::Sink>>,
-        playing: bool,
+    playing: bool,
     id3v1: Box<Id3V1<'a>>,
 }
 
-impl <'a> PlayListItem<'a> {
-    
-        fn init_sink( mut self) {
+impl<'a> PlayListItem<'a> {
+        
+        fn play(mut self) -> Self{
+        let mut file = std::fs::File::open(self.file_path.to_str().unwrap()).unwrap();
             let device = rodio::default_output_device().unwrap();
             let mut sink = rodio::Sink::new(&device);
-            self.sink= Some(Box::new(sink));
-            
+            sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+            self.sink = Some(Box::new(sink));
+        self.playing = true;
+    self
     }
-
-    fn play_item(mut self) {
-            let mut file = std::fs::File::open(self.file_path.to_str().unwrap()).unwrap();
-            self.sink.unwrap().append(rodio::Decoder::new(BufReader::new(file)).unwrap());
-            self.playing = true;
+    
+    fn stop(mut self) -> Self {
+            let a = self.sink.unwrap();
+            a.stop();
+            self.sink=None;
+            self.playing=false;
+        self
     }
+    
 }
-
 
 impl<'a> Ord for PlayListItem<'a> {
     fn cmp(&self, other: &PlayListItem) -> Ordering {
@@ -300,8 +305,7 @@ fn init_2() {
                         .length_weight(25.0)
                         .scroll_kids_vertically(),
                 ),
-            ])
-            .set(ids.master, ui);
+            ]).set(ids.master, ui);
 
         for _click in widget::Button::new()
             .middle_of(ids.play_bar)
@@ -387,30 +391,18 @@ fn init_2() {
                 match event {
                     Event::Item(item) => {
                         let idx = item.i;
+                             let fn_name = list[idx].file_name.to_owned(); 
                              let ctrl = widget::Button::new()
                              //.middle_of(ids.play_bar)
                              .w_h(80.0, 80.0)
-                             .label(&list[idx].file_name);
+                             .label(&fn_name);
+                             //.label("etetsts");
                              let times_clicked = item.set(ctrl, ui);
                              for _click in times_clicked
                              {
-                             //println!("{:?}",&list[idx].file_path.to_owned());
-                             let mut file = std::fs::File::open((&list[idx]).file_path.to_str().unwrap() ).unwrap();
-                             println!("{:?}", Id3V1::from_file(&mut file));
-                             //let device = rodio::default_output_device().unwrap();
-                             //let mut sink = rodio::Sink::new(&device);
-                             println!("{:?}",file.metadata());
-                             /*if sink.empty() {
-                             println!("Sink is empty and not playing");
-                             sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
-                             //sink.sleep_until_end();
-                             sink.stop();
-                             } else {
-                             sink.play();
-                             }
-                             */
-                             &list[idx].init_sink();
-                             &list[idx].play_item();
+                             list.iter()
+                             let a = list.remove(idx).play();
+                             list.push(a);
                              println!("PLAY THE SONG");
                              }
                              ()
