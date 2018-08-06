@@ -120,11 +120,21 @@ impl<'a> PlayListItem<'a> {
     }
 
     fn stop(mut self) -> Self {
-        let a = self.sink.unwrap();
-        a.stop();
-        self.sink = None;
-        self.playing = false;
-        self
+        //let a = self.sink.unwrap();
+        
+            match self.sink{
+        None => {
+                    self.playing = false;
+                    ()
+            },
+                     Some(_) => {
+                     self.sink.unwrap().stop();
+                     self.sink = None;
+                     self.playing = false;
+                     ()
+}
+                      };
+            self
     }
 }
 
@@ -389,18 +399,23 @@ fn init_2() {
                 match event {
                     Event::Item(item) => {
                         let idx = item.i;
-                             let fn_name = list[idx].file_name.to_owned();
+                             let item_name = list[idx].file_name.to_owned();
                              let ctrl = widget::Button::new()
                              //.middle_of(ids.play_bar)
                              .w_h(80.0, 80.0)
-                             .label(&fn_name);
+                             .label(&item_name);
                              //.label("etetsts");
                              let times_clicked = item.set(ctrl, ui);
                              for _click in times_clicked
                              {
-                             //list.iter()
-                             let a = list.remove(idx).play();
-                             list.push(a);
+                             
+                             for i in 0..list.len() as usize {
+                             let item = list.remove(i).stop();
+                             list.push(item);
+                             }
+                             let item = list.remove(idx).play();
+                             list.push(item);
+                             list.sort();
                              println!("PLAY THE SONG");
                              }
                              ()
