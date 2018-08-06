@@ -121,20 +121,20 @@ impl<'a> PlayListItem<'a> {
 
     fn stop(mut self) -> Self {
         //let a = self.sink.unwrap();
-        
-            match self.sink{
-        None => {
-                    self.playing = false;
-                    ()
-            },
-                     Some(_) => {
-                     self.sink.unwrap().stop();
-                     self.sink = None;
-                     self.playing = false;
-                     ()
-}
-                      };
-            self
+
+        match self.sink {
+            None => {
+                self.playing = false;
+                ()
+            }
+            Some(_) => {
+                self.sink.unwrap().stop();
+                self.sink = None;
+                self.playing = false;
+                ()
+            }
+        };
+        self
     }
 }
 
@@ -160,11 +160,15 @@ impl<'a> Eq for PlayListItem<'a> {}
 
 impl<'a> fmt::Debug for PlayListItem<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let sink= match self.sink {
+        let sink = match self.sink {
             Some(_) => "Some",
             None => "None",
         };
-        write!(f, "\n{{file_name:{:?},file_path:{:?},playing:{:?},sink:{:?},Id3V1:{:?}}}",self.file_name,self.file_path,self.playing,sink,self.id3v1)
+        write!(
+            f,
+            "\n{{file_name:{:?},file_path:{:?},playing:{:?},sink:{:?},Id3V1:{:?}}}",
+            self.file_name, self.file_path, self.playing, sink, self.id3v1
+        )
     }
 }
 
@@ -271,7 +275,6 @@ fn init_2() {
             &mut sink,
         );
         if let Some(primitives) = ui.draw_if_changed() {
-            println!("Changed");
             renderer.fill(&display, primitives, &image_map);
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -282,9 +285,9 @@ fn init_2() {
 
     /*
     Create the UI as follows
-      ----------------------
-      |    |              /|
-    |    |               |
+----------------------
+|    |              /|
+|    |               |
     |play|    ???        |
     |list|               |
     |    |               |
@@ -321,7 +324,7 @@ fn init_2() {
             ]).set(ids.master, ui);
 
         for _click in widget::Button::new()
-            .middle_of(ids.play_bar)
+            .middle_of(ids.play_area)
             .w_h(80.0, 80.0)
             .label("Open/Close")
             .set(ids.dummy, ui)
@@ -405,17 +408,34 @@ fn init_2() {
                     Event::Item(item) => {
                         let idx = item.i;
                              let item_name = list[idx].file_name.to_owned();
+                             let color = if list[idx].playing {
+                             conrod::color::DARK_BLUE
+                             } else {
+                             conrod::color::DARK_RED
+                             };
                              let ctrl = widget::Button::new()
                              //.middle_of(ids.play_bar)
                              .w_h(80.0, 80.0)
+                             .color(color)
                              .label(&item_name);
                              //.label("etetsts");
                              let times_clicked = item.set(ctrl, ui);
                              for _click in times_clicked
                              {
+                             for _i in 0..list.len() as usize{
+                             let mut curr_item = list.remove(_i);
+                             if curr_item.playing{
+                             curr_item = curr_item.stop()
+                             }
+                             if _i == idx {
+                             curr_item = curr_item.play();
+                             }
+                             list.push(curr_item);
+                             }
                              //let item = list.remove(idx).play();
                              //list.push(item);
                              list.sort();
+                             println!("{:?}",list);
                              println!("PLAY THE SONG");
                              }
                              ()
