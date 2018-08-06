@@ -160,7 +160,11 @@ impl<'a> Eq for PlayListItem<'a> {}
 
 impl<'a> fmt::Debug for PlayListItem<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Test")
+        let sink= match self.sink {
+            Some(_) => "Some",
+            None => "None",
+        };
+        write!(f, "\n{{file_name:{:?},file_path:{:?},playing:{:?},sink:{:?},Id3V1:{:?}}}",self.file_name,self.file_path,self.playing,sink,self.id3v1)
     }
 }
 
@@ -267,6 +271,7 @@ fn init_2() {
             &mut sink,
         );
         if let Some(primitives) = ui.draw_if_changed() {
+            println!("Changed");
             renderer.fill(&display, primitives, &image_map);
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -408,13 +413,8 @@ fn init_2() {
                              let times_clicked = item.set(ctrl, ui);
                              for _click in times_clicked
                              {
-                             
-                             for i in 0..list.len() as usize {
-                             let item = list.remove(i).stop();
-                             list.push(item);
-                             }
-                             let item = list.remove(idx).play();
-                             list.push(item);
+                             //let item = list.remove(idx).play();
+                             //list.push(item);
                              list.sort();
                              println!("PLAY THE SONG");
                              }
